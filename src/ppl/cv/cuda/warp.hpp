@@ -22,6 +22,7 @@ namespace cuda {
 
 #define TEXTURE_ALIGNMENT 32
 
+#if CUDART_VERSION < 12000
 static texture<uchar, cudaTextureType2D,
                cudaReadModeNormalizedFloat> uchar_c1_ref;
 static texture<uchar4, cudaTextureType2D,
@@ -31,6 +32,9 @@ static texture<float, cudaTextureType2D,
 static texture<float4, cudaTextureType2D,
                cudaReadModeElementType> float_c4_ref;
 
+#endif
+
+#if CUDART_VERSION < 12000
 template <typename Transform>
 __global__
 void warpLinearTexKernel(const uchar* src, int src_rows, int src_cols,
@@ -264,6 +268,8 @@ void warpLinearTexKernel(const float* src, int src_rows, int src_cols,
   else {
   }
 }
+
+#endif
 
 template <typename Transform>
 __global__

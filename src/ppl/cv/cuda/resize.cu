@@ -29,12 +29,14 @@ namespace cuda {
 #define INTER_RESIZE_COEF_SCALE (1 << INTER_RESIZE_COEF_BITS)
 #define CAST_BITS (INTER_RESIZE_COEF_BITS << 1)
 
+#if CUDART_VERSION < 12000
 static texture<uchar, cudaTextureType2D,
                cudaReadModeNormalizedFloat> uchar_c1_ref;
 static texture<uchar4, cudaTextureType2D,
                cudaReadModeNormalizedFloat> uchar_c4_ref;
 static texture<float, cudaTextureType2D,
                cudaReadModeElementType> float_c1_ref;
+#endif
 
 template <typename T>
 __DEVICE__
@@ -109,6 +111,7 @@ uchar4 bilinearSample(uchar4 values[][2], int x0, int x1, int y0, int y1) {
   return result;
 }
 
+#if CUDART_VERSION < 12000
 __global__
 void resizeLinearTextureKernel(uchar* dst, int dst_rows, int dst_cols,
                                int channels, int dst_stride, float col_scale,
@@ -161,6 +164,9 @@ void resizeLinearTextureKernel(float* dst, int dst_rows, int dst_cols,
     output[element_x] = value;
   }
 }
+
+
+#endif
 
 __global__
 void resizeLinearKernel(const uchar* src, int src_rows, int src_cols,
@@ -741,6 +747,7 @@ void resizeAreaC4Kernel1(const T* src, int src_rows, int src_cols,
   output[element_x] = saturateCastVector<Tn, float4>(sum);
 }
 
+#if CUDART_VERSION < 12000
 __global__
 void resizeAreaTextureKernel(uchar* dst, int dst_rows, int dst_cols,
                              int channels, int dst_stride, float col_scale,
@@ -811,6 +818,9 @@ void resizeAreaTextureKernel(float* dst, int dst_rows, int dst_cols,
     output[element_x] = value;
   }
 }
+
+
+#endif
 
 __global__
 void resizeAreaKernel2(const uchar* src, int src_rows, int src_cols,
@@ -1056,10 +1066,13 @@ RetCode resize(const uchar* src, int src_rows, int src_cols, int channels,
   float inv_col_scale = 1.f / col_scale;
   float inv_row_scale = 1.f / row_scale;
 
+#if CUDART_VERSION < 12000
   size_t texture_alignment = 32;
   size_t src_pitch = src_stride * sizeof(uchar);
+#endif
 
   if (interpolation == INTERPOLATION_LINEAR) {
+#if CUDART_VERSION < 12000
     if (channels == 1 && (src_pitch & (texture_alignment - 1)) == 0) {
       cudaChannelFormatDesc desc = cudaCreateChannelDesc<uchar>();
       uchar_c1_ref.normalized = false;
@@ -1092,7 +1105,9 @@ RetCode resize(const uchar* src, int src_rows, int src_cols, int channels,
       resizeLinearTextureKernel<<<grid, block, 0, stream>>>(dst, dst_rows,
           dst_cols, channels, dst_stride, col_scale, row_scale);
     }
-    else {
+    else
+#endif
+    {
       resizeLinearKernel<<<grid, block, 0, stream>>>(src, src_rows, src_cols,
           channels, src_stride, dst, dst_rows, dst_cols, dst_stride, col_scale,
           row_scale);
@@ -1153,6 +1168,7 @@ RetCode resize(const uchar* src, int src_rows, int src_cols, int channels,
       }
     }
     else {
+#if CUDART_VERSION < 12000
       if (channels == 1 && (src_pitch & (texture_alignment - 1)) == 0) {
         cudaChannelFormatDesc desc = cudaCreateChannelDesc<uchar>();
         uchar_c1_ref.normalized = false;
@@ -1187,7 +1203,9 @@ RetCode resize(const uchar* src, int src_rows, int src_cols, int channels,
             dst_cols, channels, dst_stride, col_scale, row_scale, inv_col_scale,
             inv_row_scale);
       }
-      else {
+      else
+#endif
+      {
         resizeAreaKernel2<<<grid, block, 0, stream>>>(src, src_rows, src_cols,
             channels, src_stride, dst, dst_rows, dst_cols, dst_stride,
             col_scale, row_scale, inv_col_scale, inv_row_scale);
@@ -1251,10 +1269,13 @@ RetCode resize(const float* src, int src_rows, int src_cols, int channels,
   float inv_col_scale = 1.f / col_scale;
   float inv_row_scale = 1.f / row_scale;
 
+#if CUDART_VERSION < 12000
   size_t texture_alignment = 32;
   size_t src_pitch = src_stride * sizeof(float);
+#endif
 
   if (interpolation == INTERPOLATION_LINEAR) {
+#if CUDART_VERSION < 12000
     if (channels == 1 && (src_pitch & (texture_alignment - 1)) == 0) {
       cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
       float_c1_ref.normalized = false;
@@ -1271,7 +1292,9 @@ RetCode resize(const float* src, int src_rows, int src_cols, int channels,
       resizeLinearTextureKernel<<<grid, block, 0, stream>>>(dst, dst_rows,
           dst_cols, channels, dst_stride, col_scale, row_scale);
     }
-    else {
+    else
+#endif
+    {
       resizeLinearKernel<<<grid, block, 0, stream>>>(src, src_rows, src_cols,
           channels, src_stride, dst, dst_rows, dst_cols, dst_stride, col_scale,
           row_scale);
@@ -1332,6 +1355,7 @@ RetCode resize(const float* src, int src_rows, int src_cols, int channels,
       }
     }
     else {
+#if CUDART_VERSION < 12000
       if (channels == 1 && (src_pitch & (texture_alignment - 1)) == 0) {
         cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
         float_c1_ref.normalized = false;
@@ -1349,7 +1373,9 @@ RetCode resize(const float* src, int src_rows, int src_cols, int channels,
             dst_cols, channels, dst_stride, col_scale, row_scale, inv_col_scale,
             inv_row_scale);
       }
-      else {
+      else
+#endif
+      {
         resizeAreaKernel2<<<grid, block, 0, stream>>>(src, src_rows, src_cols,
             channels, src_stride, dst, dst_rows, dst_cols, dst_stride,
             col_scale, row_scale, inv_col_scale, inv_row_scale);

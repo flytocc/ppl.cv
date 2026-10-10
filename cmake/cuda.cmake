@@ -5,8 +5,12 @@ if(PPLCV_USE_MSVC_STATIC_RUNTIME)
 endif()
 
 set(_NVCC_FLAGS )
-set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_35,code=sm_35")
-set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_37,code=sm_37")
+
+if(CUDA_VERSION VERSION_LESS "12.0")
+    # CUDA 12 dropped support for Kepler GPUs (compute capabilities 3.5 and 3.7).
+    set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_35,code=sm_35")
+    set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_37,code=sm_37")
+endif()
 set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_50,code=sm_50")
 set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_53,code=sm_53")
 if(CUDA_VERSION_MAJOR VERSION_GREATER_EQUAL "8")
@@ -29,7 +33,13 @@ if (CUDA_VERSION_MAJOR VERSION_GREATER_EQUAL "11")
     if (CUDA_VERSION_MINOR VERSION_GREATER_EQUAL "4")
         set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_87,code=sm_87")
     endif ()
+    if (CUDA_VERSION_MINOR VERSION_GREATER_EQUAL "8")
+        set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_89,code=sm_89")
+    endif ()
 endif ()
+if(CUDA_VERSION VERSION_GREATER_EQUAL "12.8")
+    set(_NVCC_FLAGS "${_NVCC_FLAGS} -gencode arch=compute_120,code=sm_120")
+endif()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${_NVCC_FLAGS}")
 
 # --------------------------------------------------------------------------- #

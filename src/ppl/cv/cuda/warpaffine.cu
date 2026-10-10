@@ -78,6 +78,7 @@ RetCode warpAffine(const uchar* src, int src_rows, int src_cols, int channels,
   AffineTransform affine_transform(affine_matrix);
 
   if (interpolation == INTERPOLATION_LINEAR) {
+#if CUDART_VERSION < 12000
     if (channels != 3 && (src_stride & (TEXTURE_ALIGNMENT - 1)) == 0) {
       if (channels == 1) {
         cudaChannelFormatDesc desc = cudaCreateChannelDesc<uchar>();
@@ -113,7 +114,9 @@ RetCode warpAffine(const uchar* src, int src_rows, int src_cols, int channels,
         cudaUnbindTexture(uchar_c4_ref);
       }
     }
-    else {
+    else
+#endif
+    {
       warpLinearKernel<AffineTransform><<<grid, block, 0, stream>>>(src,
           src_rows, src_cols, channels, src_stride, affine_transform, dst,
           dst_rows, dst_cols, dst_stride, border_type, border_value);
@@ -185,6 +188,7 @@ RetCode warpAffine(const float* src, int src_rows, int src_cols, int channels,
   AffineTransform affine_transform(affine_matrix);
 
   if (interpolation == INTERPOLATION_LINEAR) {
+#if CUDART_VERSION < 12000
     if (channels != 3 && (src_stride & (TEXTURE_ALIGNMENT - 1)) == 0) {
       if (channels == 1) {
         cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
@@ -220,7 +224,9 @@ RetCode warpAffine(const float* src, int src_rows, int src_cols, int channels,
         cudaUnbindTexture(float_c4_ref);
       }
     }
-    else {
+    else
+#endif
+    {
       warpLinearKernel<AffineTransform><<<grid, block, 0, stream>>>(src,
           src_rows, src_cols, channels, src_stride, affine_transform, dst,
           dst_rows, dst_cols, dst_stride, border_type, border_value);
